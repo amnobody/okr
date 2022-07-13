@@ -15,12 +15,6 @@ public interface ReportNameConstant {
     String EXCEL_WEEK_SUFFIX = "周工作计划和总结.xlsx";
     String EXCEL_DAY_SUFFIX = "工作日志.xlsx";
 
-
-    /**
-     * 初始文件路径
-     */
-    String ORIGIN_FILE = "/Users/chenjiwei/chenjw01 - 日志.xlsx";
-
     /**
      * 周日报导出模板路径
      */

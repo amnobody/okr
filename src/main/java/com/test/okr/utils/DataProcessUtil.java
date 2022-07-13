@@ -2,6 +2,7 @@ package com.test.okr.utils;
 
 import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.util.StringUtils;
+import com.test.okr.constant.MDCContextConstant;
 import com.test.okr.constant.ReportNameConstant;
 import com.test.okr.entity.TaskLog;
 import lombok.extern.slf4j.Slf4j;
@@ -9,13 +10,14 @@ import org.slf4j.MDC;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import sun.security.action.GetPropertyAction;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.security.AccessController;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,15 +34,49 @@ import java.util.stream.Collectors;
 public class DataProcessUtil {
 
     /**
+     * 存储文件父目录固定部分
+     */
+    public static String storageParentCatalog;
+    /**
      * 生成文件路径相关
      */
-    private static final File tmpdir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
-    private static final String PARENT_CATALOG = tmpdir.getAbsolutePath() + File.separator;
+    private final static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("w");
 
-    public static void doExport(String username, List list) {
-        exportDayReportAbsPath(username, list);
-        final List weekList = generateWeeklyReportList(list, username);
-        exportWeekReportAbsPath(username, weekList);
+    /**
+     * 获取保存导出文件的目录
+     *
+     * @return
+     */
+    private static String getExportFilePath() {
+        final String weekOfYear = LocalDateTime.now().format(dateTimeFormatter);
+        StringBuilder builder = new StringBuilder();
+        Assert.isTrue(StringUtils.isNotBlank(storageParentCatalog), "初始化存储路径失败");
+        String catalog = builder.append(storageParentCatalog)
+                .append(weekOfYear).append(File.separator)
+                .append(MDC.get(MDCContextConstant.traceId)).append(File.separator)
+                .toString();
+
+        File file = new File(catalog);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+        return catalog;
+    }
+
+
+    public static void doExport(MultipartFile multipartFile) {
+        final File file = FileUtil.multipart2File(multipartFile);
+        EasyExcel.read(file, TaskLog.class, new IndexOrNameDataListener()).sheet().doRead();
+    }
+
+    public static void doExport(List<TaskLog> list) {
+        Assert.isTrue(!CollectionUtils.isEmpty(list), "日报list不能为空");
+        if (StringUtils.isBlank(MDC.get(MDCContextConstant.USERNAME))) {
+            MDC.put(MDCContextConstant.USERNAME, list.get(0).getName());
+        }
+        exportDayReportAbsPath(list);
+        final List weekList = generateWeeklyReportList(list);
+        exportWeekReportAbsPath(weekList);
     }
 
     /**
@@ -48,15 +84,16 @@ public class DataProcessUtil {
      *
      * @return
      */
-    private static String exportDayReportAbsPath(String username, List list) {
+    private static String exportDayReportAbsPath(List list) {
         Assert.isTrue(!CollectionUtils.isEmpty(list), "pms导出日报文件不能为空");
-        String fileName = ReportNameConstant.EXCEL_PREFIX + username + ReportNameConstant.EXCEL_DAY_SUFFIX;
-        final String absFilePath = PARENT_CATALOG + fileName;
+        String fileName = ReportNameConstant.EXCEL_PREFIX + MDC.get(MDCContextConstant.USERNAME) + ReportNameConstant.EXCEL_DAY_SUFFIX;
+        final String absFilePath = getExportFilePath() + fileName;
         try (final InputStream stream = new ClassPathResource(ReportNameConstant.DAY_EXPORT_TEMPLATE).getInputStream()) {
             EasyExcel.write(absFilePath).withTemplate(stream).sheet().doFill(list);
         } catch (Exception e) {
             throw new RuntimeException("easyExcel模板读取写入异常" + ReportNameConstant.DAY_EXPORT_TEMPLATE, e);
         }
+        MDC.put(MDCContextConstant.RES_DAY_PATH, absFilePath.replace(storageParentCatalog, ""));
         log.info("生成日报文件绝对路径={}", absFilePath);
         return absFilePath;
     }
@@ -66,14 +103,15 @@ public class DataProcessUtil {
      *
      * @return
      */
-    private static String exportWeekReportAbsPath(String username, List list) {
-        String fileName = ReportNameConstant.EXCEL_PREFIX + username + ReportNameConstant.EXCEL_WEEK_SUFFIX;
-        final String absFilePath = PARENT_CATALOG + fileName;
+    private static String exportWeekReportAbsPath(List list) {
+        String fileName = ReportNameConstant.EXCEL_PREFIX + MDC.get(MDCContextConstant.USERNAME) + ReportNameConstant.EXCEL_WEEK_SUFFIX;
+        final String absFilePath = getExportFilePath() + fileName;
         try (final InputStream stream = new ClassPathResource(ReportNameConstant.WEEK_EXPORT_TEMPLATE).getInputStream()) {
             EasyExcel.write(absFilePath).withTemplate(stream).sheet().doFill(list);
         } catch (Exception e) {
             throw new RuntimeException("easyExcel模板读取写入异常" + ReportNameConstant.WEEK_EXPORT_TEMPLATE, e);
         }
+        MDC.put(MDCContextConstant.RES_WEEK_PATH, absFilePath.replace(storageParentCatalog, ""));
         log.info("生成周报文件绝对路径={}", absFilePath);
         return absFilePath;
     }
@@ -84,7 +122,7 @@ public class DataProcessUtil {
      * @param list 日报列表
      * @return
      */
-    private static List<Map<String, Object>> generateWeeklyReportList(List<TaskLog> list, String username) {
+    private static List<Map<String, Object>> generateWeeklyReportList(List<TaskLog> list) {
         List<Map<String, Object>> resultListMap = new ArrayList<>(list.size());
 
         final Map<String, List<TaskLog>> taskMap = list.stream().filter(taskLog -> StringUtils.isNotBlank(taskLog.getTask()))
@@ -97,7 +135,7 @@ public class DataProcessUtil {
             final List<TaskLog> sameTaskList = entry.getValue();
             final String content = sameTaskList.stream().map(TaskLog::getContent).collect(Collectors.joining("；\r\n"));
             map.put("id", sameTaskList.get(0).getId());
-            map.put("name", username);
+            map.put("name", MDC.get(MDCContextConstant.USERNAME));
             map.put("content", content);
             map.put("task", task);
             map.put("product", sameTaskList.get(0).getProduct());

@@ -1,0 +1,3 @@
+storage:
+  catalog:
+    report: /usr/share/nginx/ufs/
