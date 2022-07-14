@@ -58,7 +58,8 @@ public class DataProcessUtil {
 
         File file = new File(catalog);
         if (!file.exists()) {
-            file.mkdirs();
+            final boolean mkdirs = file.mkdirs();
+            log.info("创建文件路径：{}，是否创建成功{}", catalog, mkdirs);
         }
         return catalog;
     }
