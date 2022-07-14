@@ -5,7 +5,7 @@ import com.test.okr.constant.MDCContextConstant;
 import com.test.okr.entity.TaskLog;
 import com.test.okr.utils.DataProcessUtil;
 import com.test.okr.utils.FileUtil;
-import com.test.okr.utils.IndexOrNameDataListener;
+import com.test.okr.utils.excel.WeekReportReadListener;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ public class WeekReportService {
 
     public Map<String,Object> getWeekFilePathsFromWebPage(MultipartFile multipartFile) {
         final File file = FileUtil.multipart2File(multipartFile);
-        EasyExcel.read(file, TaskLog.class, new IndexOrNameDataListener()).sheet().doRead();
+        EasyExcel.read(file, TaskLog.class, new WeekReportReadListener()).sheet().doRead();
         final Map<String, Object> map = new HashMap<>();
         map.put("msg", Arrays.asList(MDC.get(MDCContextConstant.RES_DAY_PATH), MDC.get(MDCContextConstant.RES_WEEK_PATH)));
         map.put("name", MDC.get(MDCContextConstant.USERNAME));

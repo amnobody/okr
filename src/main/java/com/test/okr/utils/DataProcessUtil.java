@@ -5,6 +5,7 @@ import com.alibaba.excel.util.StringUtils;
 import com.test.okr.constant.MDCContextConstant;
 import com.test.okr.constant.ReportNameConstant;
 import com.test.okr.entity.TaskLog;
+import com.test.okr.utils.excel.SelfAdaptiveHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.core.io.ClassPathResource;

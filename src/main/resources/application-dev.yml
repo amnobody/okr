@@ -1,3 +1,6 @@
 storage:
   catalog:
     report: /Users/chenjiwei/
+server:
+  servlet:
+    context-path: /api
