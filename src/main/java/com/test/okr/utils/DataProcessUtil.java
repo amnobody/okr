@@ -10,7 +10,6 @@ import org.slf4j.MDC;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.InputStream;
@@ -18,10 +17,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -65,19 +61,40 @@ public class DataProcessUtil {
     }
 
 
-    public static void doExport(MultipartFile multipartFile) {
-        final File file = FileUtil.multipart2File(multipartFile);
-        EasyExcel.read(file, TaskLog.class, new IndexOrNameDataListener()).sheet().doRead();
-    }
-
+    /**
+     * do生成文件地址
+     * @param list
+     */
     public static void doExport(List<TaskLog> list) {
         Assert.isTrue(!CollectionUtils.isEmpty(list), "日报list不能为空");
+        checkIfDataLegal(list);
         if (StringUtils.isBlank(MDC.get(MDCContextConstant.USERNAME))) {
             MDC.put(MDCContextConstant.USERNAME, list.get(0).getName());
         }
         exportDayReportAbsPath(list);
         final List weekList = generateWeeklyReportList(list);
         exportWeekReportAbsPath(weekList);
+    }
+
+    /**
+     * 检查excel 数据行是否正常
+     *
+     * @param taskLogList
+     */
+    private static void checkIfDataLegal(List<TaskLog> taskLogList) {
+        Set<String> set = new HashSet<>();
+        for (TaskLog taskLog : taskLogList) {
+            String number = taskLog.getId();
+            Assert.isTrue(null != taskLog.getUsedTime(), String.format("请检查编号=%s日志,耗时不能为空", number));
+            if (taskLog.getLastTime() == null) {
+                taskLog.setLastTime(BigDecimal.ZERO);
+            }
+            Assert.isTrue(StringUtils.isNotBlank(taskLog.getName()), String.format("请检查编号=%s日志,登记人不能为空", number));
+            Assert.isTrue(StringUtils.isNotBlank(taskLog.getDate()), String.format("请检查编号=%s日志,日期格式不能为空", number));
+            Assert.isTrue(StringUtils.isNotBlank(taskLog.getTask()), String.format("请检查编号=%s日志,对象不能为空，填报工作内容需要关联到任务中...", number));
+            set.add(taskLog.getName().trim());
+        }
+        Assert.isTrue(set.size() == 1, "请检查是否有多个登记人");
     }
 
     /**

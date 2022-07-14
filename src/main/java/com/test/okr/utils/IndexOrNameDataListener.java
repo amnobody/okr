@@ -11,8 +11,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author ChenJiWei
@@ -33,10 +31,8 @@ public class IndexOrNameDataListener extends AnalysisEventListener<TaskLog> {
 
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
-        Assert.isTrue(!CollectionUtils.isEmpty(cachedDataList), "不允许上传空文件");
-        final Set<String> nameSet = cachedDataList.stream().map(TaskLog::getName).collect(Collectors.toSet());
-        Assert.isTrue(nameSet.size() == 1, "登记人应该唯一");
         log.info("数据解析完成...");
+        Assert.isTrue(!CollectionUtils.isEmpty(cachedDataList), "不允许上传空文件");
         final String username = cachedDataList.get(0).getName();
         MDC.put(MDCContextConstant.USERNAME, username);
         DataProcessUtil.doExport(cachedDataList);
