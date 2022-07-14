@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * @description
  */
 @Slf4j
-public class IndexOrNameDataListener extends AnalysisEventListener<TaskLog> {
+public class WeekReportReadListener extends AnalysisEventListener<TaskLog> {
 
     private List<TaskLog> cachedDataList = ListUtils.newArrayListWithExpectedSize(100);
 

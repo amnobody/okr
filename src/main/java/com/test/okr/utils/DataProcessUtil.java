@@ -67,7 +67,7 @@ public class DataProcessUtil {
 
     public static void doExport(MultipartFile multipartFile) {
         final File file = FileUtil.multipart2File(multipartFile);
-        EasyExcel.read(file, TaskLog.class, new IndexOrNameDataListener()).sheet().doRead();
+        EasyExcel.read(file, TaskLog.class, new WeekReportReadListener()).sheet().doRead();
     }
 
     public static void doExport(List<TaskLog> list) {
