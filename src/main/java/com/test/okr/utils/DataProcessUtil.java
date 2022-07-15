@@ -5,7 +5,6 @@ import com.alibaba.excel.util.StringUtils;
 import com.test.okr.constant.ReportNameConstant;
 import com.test.okr.entity.TaskLog;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -16,10 +15,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.AccessController;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -37,10 +33,11 @@ public class DataProcessUtil {
     private static final File tmpdir = new File(AccessController.doPrivileged(new GetPropertyAction("java.io.tmpdir")));
     private static final String PARENT_CATALOG = tmpdir.getAbsolutePath() + File.separator;
 
-    public static void doExport(String username, List list) {
+    public static void doExport(String username, List<TaskLog> list) {
         exportDayReportAbsPath(username, list);
         final List weekList = generateWeeklyReportList(list, username);
-        exportWeekReportAbsPath(username, weekList);
+        int max = list.stream().mapToInt(log -> log.getContent().length()).max().getAsInt();
+        exportWeekReportAbsPath(username, weekList, max);
     }
 
     /**
@@ -66,11 +63,11 @@ public class DataProcessUtil {
      *
      * @return
      */
-    private static String exportWeekReportAbsPath(String username, List list) {
+    private static String exportWeekReportAbsPath(String username, List list, int maxCharacterCount) {
         String fileName = ReportNameConstant.EXCEL_PREFIX + username + ReportNameConstant.EXCEL_WEEK_SUFFIX;
         final String absFilePath = PARENT_CATALOG + fileName;
         try (final InputStream stream = new ClassPathResource(ReportNameConstant.WEEK_EXPORT_TEMPLATE).getInputStream()) {
-            EasyExcel.write(absFilePath).withTemplate(stream).sheet().doFill(list);
+            EasyExcel.write(absFilePath).registerWriteHandler(new SelfAdaptiveHandler(maxCharacterCount)).withTemplate(stream).sheet().doFill(list);
         } catch (Exception e) {
             throw new RuntimeException("easyExcel模板读取写入异常" + ReportNameConstant.WEEK_EXPORT_TEMPLATE, e);
         }
