@@ -55,7 +55,7 @@ public class DataProcessUtil {
         File file = new File(catalog);
         if (!file.exists()) {
             final boolean mkdirs = file.mkdirs();
-            log.info("创建文件路径：{}，是否创建成功{}", catalog, mkdirs);
+            Assert.isTrue(mkdirs == true, "文件系统权限问题");
         }
         return catalog;
     }

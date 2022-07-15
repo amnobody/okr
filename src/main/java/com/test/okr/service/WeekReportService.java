@@ -32,7 +32,7 @@ public class WeekReportService {
         final File file = FileUtil.multipart2File(multipartFile);
         EasyExcel.read(file, TaskLog.class, new IndexOrNameDataListener()).sheet().doRead();
         final Map<String, Object> map = new HashMap<>();
-        map.put("msg", Arrays.asList(MDC.get(MDCContextConstant.RES_DAY_PATH), MDC.get(MDCContextConstant.RES_DAY_PATH)));
+        map.put("msg", Arrays.asList(MDC.get(MDCContextConstant.RES_DAY_PATH), MDC.get(MDCContextConstant.RES_WEEK_PATH)));
         map.put("name", MDC.get(MDCContextConstant.USERNAME));
         if (null != file) {
             file.delete();
@@ -48,7 +48,7 @@ public class WeekReportService {
     public Map<String,Object> getWeekFilePathsFromPlugin(List<TaskLog> list) {
         DataProcessUtil.doExport(list);
         final Map<String, Object> map = new HashMap<>();
-        map.put("msg", Arrays.asList(MDC.get(MDCContextConstant.RES_DAY_PATH), MDC.get(MDCContextConstant.RES_DAY_PATH)));
+        map.put("msg", Arrays.asList(MDC.get(MDCContextConstant.RES_DAY_PATH), MDC.get(MDCContextConstant.RES_WEEK_PATH)));
         return map;
     }
 }
