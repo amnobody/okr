@@ -73,7 +73,8 @@ public class DataProcessUtil {
         }
         exportDayReportAbsPath(list);
         final List weekList = generateWeeklyReportList(list);
-        exportWeekReportAbsPath(weekList);
+        int max = list.stream().mapToInt(log -> log.getContent().length()).max().getAsInt();
+        exportWeekReportAbsPath(weekList, max);
     }
 
     /**
@@ -121,11 +122,11 @@ public class DataProcessUtil {
      *
      * @return
      */
-    private static String exportWeekReportAbsPath(List list) {
+    private static String exportWeekReportAbsPath(List list,int maxCount) {
         String fileName = ReportNameConstant.EXCEL_PREFIX + MDC.get(MDCContextConstant.USERNAME) + ReportNameConstant.EXCEL_WEEK_SUFFIX;
         final String absFilePath = getExportFilePath() + fileName;
         try (final InputStream stream = new ClassPathResource(ReportNameConstant.WEEK_EXPORT_TEMPLATE).getInputStream()) {
-            EasyExcel.write(absFilePath).withTemplate(stream).sheet().doFill(list);
+            EasyExcel.write(absFilePath).registerWriteHandler(new SelfAdaptiveHandler(maxCount)).withTemplate(stream).sheet().doFill(list);
         } catch (Exception e) {
             throw new RuntimeException("easyExcel模板读取写入异常" + ReportNameConstant.WEEK_EXPORT_TEMPLATE, e);
         }
