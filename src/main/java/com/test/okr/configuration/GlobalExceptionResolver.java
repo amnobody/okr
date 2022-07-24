@@ -1,10 +1,10 @@
 package com.test.okr.configuration;
 
+import com.test.okr.utils.CustomRuntimeException;
 import com.test.okr.utils.ExceptionUtil;
 import com.test.okr.utils.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -31,11 +31,17 @@ public class GlobalExceptionResolver {
         return R.error("Oops...404");
     }
 
-    @ExceptionHandler({MethodArgumentNotValidException.class})
+    /**
+     * 仅仅日志打印
+     *
+     * @param e
+     * @return
+     */
+    @ExceptionHandler({Exception.class})
     @ResponseBody
-    public R validException(MethodArgumentNotValidException e) {
-        log.error("error", e);
-        return R.error(e.getBindingResult().getFieldError().getDefaultMessage());
+    public R exception(Exception e) {
+        log.error("异常堆栈", e);
+        return R.error(e.getMessage());
     }
 
 
@@ -45,7 +51,7 @@ public class GlobalExceptionResolver {
      * @param e
      * @return
      */
-    @ExceptionHandler({Exception.class})
+    @ExceptionHandler({CustomRuntimeException.class})
     @ResponseBody
     public R exceptionHandler(Exception e) {
         log.error(ExceptionUtil.getSimpleException(e));
