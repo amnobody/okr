@@ -34,7 +34,7 @@ public class SelfAdaptiveHandler implements CellWriteHandler {
             final String value = cell.getStringCellValue();
             final int length = value.split("；\r\n", 10).length;
             cell.getRow().setHeight((short) (460 + (length - 1) * 300));
-            cell.getSheet().setColumnWidth(cell.getColumnIndex(), maxCharacterCount * 500);
+            //cell.getSheet().setColumnWidth(cell.getColumnIndex(), maxCharacterCount * 500);
         }
     }
 }
