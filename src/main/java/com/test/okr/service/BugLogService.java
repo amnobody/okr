@@ -10,12 +10,13 @@ import com.test.okr.model.response.BugLogResponse;
 import com.test.okr.utils.FileUtil;
 import com.test.okr.utils.PieUtil;
 import com.test.okr.utils.excel.BugLogTestReadListener;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -62,9 +63,27 @@ public class BugLogService {
     public BugLogResponse getPieArrayByCondition(BugLogRequest param) {
         //1. 根据时间条件查询数据库
         final String key = param.getProject();
-        final List<BugLog> bugList = caffeineCache.getIfPresent(key);
-        Assert.isTrue(!CollectionUtils.isEmpty(bugList), "会话过期请重新上传");
-
+        final List<BugLog> originList = caffeineCache.getIfPresent(key);
+        Assert.isTrue(!CollectionUtils.isEmpty(originList), "会话过期请重新上传");
+        final List<LocalDate> createRange = param.getCreateDateRange();
+        final List<LocalDate> closeDateRange = param.getCloseDateRange();
+        LocalDate s1,s2,e1,e2;
+        if (CollectionUtils.isEmpty(createRange)) {
+            s1 = LocalDate.of(1995, 1, 1);
+            s2 = LocalDate.of(2055, 1, 1);
+        } else {
+            s1 = createRange.get(0).plusDays(-1);
+            s2 = createRange.get(1).plusDays(1);
+        }
+        if (CollectionUtils.isEmpty(closeDateRange)) {
+            e1 = LocalDate.of(1995, 1, 1);
+            e2 = LocalDate.of(2055, 1, 1);
+        } else {
+            e1 = closeDateRange.get(0).plusDays(-1);
+            e2 = closeDateRange.get(1).plusDays(1);
+        }
+        final List<BugLog> bugList = originList.stream().filter(temp -> temp.getCreateDate().isAfter(s1) && temp.getCloseDate().isBefore(s2)
+                && temp.getCloseDate().isAfter(e1) && temp.getCloseDate().isBefore(e2)).collect(Collectors.toList());
         //2. 分维度统计
         Map<String, Long> pieMap;
         long total;
