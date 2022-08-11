@@ -45,4 +45,13 @@ public class BugLogController {
         return R.ok(bugLogService.getPieArrayByCondition(param));
     }
 
+    /**
+     * 缓存使用情况
+     *
+     * @return
+     */
+    @RequestMapping(value = "cache/stat")
+    public R cache() {
+        return R.ok(bugLogService.caffeineCache.stats());
+    }
 }
